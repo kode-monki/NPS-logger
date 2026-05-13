@@ -1,0 +1,19 @@
+{{/* layouts/shortcodes/trip-parks.html
+     Usage: {{< trip-parks trip="Southwest 2023" >}} */}}
+{{ $tripName := .Get "trip" }}
+{{ $parks := where (where .Site.RegularPages "Section" "parks") ".Params.trips" "intersect" (slice $tripName) }}
+<ul class="sc-trip-parks">
+  {{ range $parks }}
+  <li class="sc-trip-parks__item{{ if .Params.visited }} sc-trip-parks__item--visited{{ end }}">
+    <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+    <span class="sc-trip-parks__state">{{ delimit .Params.state ", " }}</span>
+    {{ if .Params.rating }}
+      <span class="sc-trip-parks__rating" aria-label="Rating {{ .Params.rating }}/5">
+        {{ range seq .Params.rating }}★{{ end }}
+      </span>
+    {{ end }}
+  </li>
+  {{ else }}
+  <li><em>No parks tagged with trip "{{ $tripName }}" yet.</em></li>
+  {{ end }}
+</ul>

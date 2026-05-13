@@ -1,0 +1,86 @@
+{{/* layouts/_default/checklist.html */}}
+{{ define "main" }}
+{{ $allParks   := .Site.Data.allNpsSites.sites }}
+{{ $parkPages  := where .Site.RegularPages "Section" "parks" }}
+
+{{/* Build a lookup map: park_code → page */}}
+{{ $visited := dict }}
+{{ range $parkPages }}
+  {{ if .Params.park_code }}
+    {{ $visited = merge $visited (dict .Params.park_code .) }}
+  {{ end }}
+{{ end }}
+
+{{ $total   := len $allParks }}
+{{ $doneLen := 0 }}
+{{ range $allParks }}
+  {{ if index $visited .code }}{{ $doneLen = add $doneLen 1 }}{{ end }}
+{{ end }}
+
+<main class="checklist-page">
+  <header class="checklist-header">
+    <h1>National Parks Checklist</h1>
+    <div class="checklist-progress">
+      <div class="checklist-progress__bar">
+        <div class="checklist-progress__fill" style="width:{{ div (mul $doneLen 100) $total }}%"></div>
+      </div>
+      <p class="checklist-progress__label">
+        <strong>{{ $doneLen }}</strong> of <strong>{{ $total }}</strong> visited
+        ({{ div (mul $doneLen 100) $total }}%)
+      </p>
+    </div>
+  </header>
+
+  {{/* Group by region */}}
+  {{ $byRegion := dict }}
+  {{ range $allParks }}
+    {{ $r := .region }}
+    {{ $existing := index $byRegion $r | default (slice) }}
+    {{ $byRegion = merge $byRegion (dict $r (append $existing .)) }}
+  {{ end }}
+
+  {{ range $region, $parks := $byRegion }}
+  <section class="checklist-region">
+    <h2 class="checklist-region__title">{{ $region }}</h2>
+    <ul class="checklist-list">
+      {{ range $parks }}
+        {{ $page := index $visited .code }}
+        {{ $isVisited := ne $page nil }}
+        <li class="checklist-item{{ if $isVisited }} checklist-item--visited{{ end }}">
+          <span class="checklist-item__check">{{ if $isVisited }}✓{{ else }}○{{ end }}</span>
+          <div class="checklist-item__body">
+            {{ if $page }}
+              <a class="checklist-item__name" href="{{ $page.RelPermalink }}">{{ .name }}</a>
+            {{ else }}
+              <span class="checklist-item__name checklist-item__name--unvisited">{{ .name }}</span>
+            {{ end }}
+            <span class="checklist-item__meta">{{ .state }} · {{ .designation | default "National Park" }}</span>
+            {{ if $page }}
+              {{ if $page.Params.summary }}
+                <p class="checklist-item__summary">{{ $page.Params.summary }}</p>
+              {{ end }}
+              {{ if $page.Params.rating }}
+                <span class="checklist-item__rating">
+                  {{ range seq $page.Params.rating }}★{{ end }}
+                </span>
+              {{ end }}
+            {{ end }}
+          </div>
+          <div class="checklist-item__links">
+            {{ if $page }}
+              {{ if $page.Params.google_maps_url }}
+                <a href="{{ $page.Params.google_maps_url }}" target="_blank" title="Google Maps" class="icon-link icon-link--map">🗺</a>
+              {{ end }}
+              {{ if $page.Params.google_photos_url }}
+                <a href="{{ $page.Params.google_photos_url }}" target="_blank" title="Photos" class="icon-link icon-link--photos">📷</a>
+              {{ end }}
+            {{ end }}
+            <a href="https://www.nps.gov/{{ lower .code }}" target="_blank" title="NPS Page" class="icon-link icon-link--nps">🏞</a>
+          </div>
+        </li>
+      {{ end }}
+    </ul>
+  </section>
+  {{ end }}
+</main>
+{{ end }}

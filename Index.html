@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parks CMS</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:  #2d5016;
+    --stone:   #8b7355;
+    --sky:     #4a90a4;
+    --sand:    #f5f0e8;
+    --bark:    #3d2b1f;
+    --moss:    #5a7a3a;
+    --white:   #ffffff;
+    --border:  #d4c5a9;
+    --danger:  #c0392b;
+    --success: #27ae60;
+    --radius:  6px;
+    --shadow:  0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: "Georgia", serif;
+    background: var(--sand);
+    color: var(--bark);
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .cms-shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 240px;
+    background: var(--forest);
+    color: #c8e6c9;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    padding: 20px 16px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    letter-spacing: 0.03em;
+  }
+  .sidebar-logo span { font-size: 22px; }
+
+  .sidebar-nav { flex: 1; padding: 12px 0; }
+
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255,255,255,0.4); }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; cursor: pointer;
+    color: rgba(255,255,255,0.75); font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.12); color: white;
+    border-left-color: #8bc34a; }
+
+  .sidebar-footer { padding: 12px 16px; font-size: 12px; color: rgba(255,255,255,0.4);
+    border-top: 1px solid rgba(255,255,255,0.1); }
+
+  /* ── Main area ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .topbar h2 { font-size: 18px; color: var(--bark); }
+
+  .btn {
+    padding: 8px 16px; border-radius: var(--radius);
+    border: none; cursor: pointer; font-size: 13px;
+    font-family: inherit; font-weight: 600; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--forest); color: white; }
+  .btn-primary:hover { background: var(--moss); }
+  .btn-secondary { background: var(--border); color: var(--bark); }
+  .btn-secondary:hover { background: #c4b090; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-sky { background: var(--sky); color: white; }
+  .btn-sky:hover { background: #3a7a94; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── Content panel ── */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ── Dashboard ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow); text-align: center; }
+  .stat-card__num { font-size: 36px; font-weight: bold; color: var(--forest); }
+  .stat-card__label { font-size: 12px; color: #888; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .progress-bar { height: 12px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--moss), var(--forest)); border-radius: 99px; transition: width 0.4s; }
+
+  /* ── Parks list ── */
+  .park-list { display: grid; gap: 12px; }
+
+  .park-card {
+    background: white; border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px;
+    border-left: 4px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .park-card--visited { border-left-color: var(--moss); }
+  .park-card--planning { border-left-color: var(--sky); }
+
+  .park-card__status { font-size: 18px; }
+  .park-card__info { flex: 1; min-width: 0; }
+  .park-card__title { font-weight: bold; font-size: 15px; }
+  .park-card__meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .park-card__tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .park-card__actions { display: flex; gap: 6px; }
+
+  /* ── Tags ── */
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+  }
+  .tag-state    { background: #e8f5e9; color: var(--forest); }
+  .tag-region   { background: #fff3e0; color: #e65100; }
+  .tag-trip     { background: #e3f2fd; color: #1565c0; }
+  .tag-visited  { background: #e8f5e9; color: var(--moss); }
+  .tag-planning { background: #e3f2fd; color: var(--sky); }
+  .tag-rating   { background: #fff8e1; color: #f57f17; }
+
+  /* ── Search / filter bar ── */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .search-input {
+    flex: 1; min-width: 200px; padding: 8px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: inherit; font-size: 14px; background: white;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--moss); }
+
+  select.filter-select {
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: inherit; font-size: 14px; background: white;
+    outline: none; cursor: pointer;
+  }
+
+  /* ── Form ── */
+  .park-form { background: white; border-radius: var(--radius);
+    padding: 28px; box-shadow: var(--shadow); max-width: 800px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-full { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #666; }
+  .field input, .field select, .field textarea {
+    padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); font-family: inherit;
+    font-size: 14px; background: white; outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--moss); box-shadow: 0 0 0 3px rgba(90,122,58,0.12);
+  }
+  .field textarea { resize: vertical; min-height: 100px; }
+  .field-hint { font-size: 11px; color: #999; margin-top: 2px; }
+
+  .form-section { margin: 20px 0 10px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--sand); font-size: 14px;
+    font-weight: bold; color: var(--stone); text-transform: uppercase;
+    letter-spacing: 0.06em; }
+
+  .checkbox-row { display: flex; align-items: center; gap: 8px; }
+  .checkbox-row input[type=checkbox] { width: 16px; height: 16px; }
+
+  .star-rating { display: flex; gap: 4px; }
+  .star-rating label { font-size: 24px; cursor: pointer; color: #ddd;
+    transition: color 0.1s; line-height: 1; }
+  .star-rating input[type=radio] { display: none; }
+  .star-rating input[type=radio]:checked ~ label { color: #ddd; }
+  .star-rating label:hover,
+  .star-rating label:hover ~ label { color: #ddd; }
+  .star-active { color: #f59e0b !important; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--bark); color: white;
+    padding: 12px 20px; border-radius: var(--radius);
+    font-size: 14px; box-shadow: var(--shadow);
+    animation: slideIn 0.3s ease;
+    z-index: 1000;
+  }
+  .toast--success { background: var(--success); }
+  .toast--error   { background: var(--danger); }
+  @keyframes slideIn { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+  /* ── Loading ── */
+  .loading { display: flex; align-items: center; justify-content: center;
+    padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--forest); border-radius: 50%;
+    animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Checklist ── */
+  .checklist-table { width: 100%; border-collapse: collapse; background: white;
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .checklist-table th { background: var(--forest); color: white; padding: 10px 12px;
+    text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .checklist-table td { padding: 10px 12px; border-bottom: 1px solid var(--sand);
+    font-size: 13px; vertical-align: middle; }
+  .checklist-table tr:hover td { background: var(--sand); }
+  .checklist-table tr:last-child td { border-bottom: none; }
+  .check-yes { color: var(--success); font-size: 16px; }
+  .check-no  { color: #ccc; font-size: 16px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="cms-shell">
+  <!-- Sidebar nav -->
+  <aside class="sidebar">
+    <div class="sidebar-logo"><span>🏞</span> Parks CMS</div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">📊 Dashboard</div>
+      <div class="nav-item" onclick="showView('parks')" id="nav-parks">🗺 Parks</div>
+      <div class="nav-item" onclick="showView('checklist')" id="nav-checklist">✅ Checklist</div>
+      <div class="nav-item" onclick="showView('trips')" id="nav-trips">✈️ Trips</div>
+      <div class="nav-section">Actions</div>
+      <div class="nav-item" onclick="exportAll()">⬇️ Export → Drive</div>
+      <div class="nav-item" onclick="pushGitHub()">🐙 Push → GitHub</div>
+    </nav>
+    <div class="sidebar-footer">National Parks CMS v1.0</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="topbar-title">Dashboard</h2>
+      <div id="topbar-actions"></div>
+    </div>
+    <div class="content" id="main-content">
+      <div class="loading"><div class="spinner"></div> Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let allParks = [];
+let allTrips = [];
+let currentView = "dashboard";
+let editingSlug = null;
+
+// ── Boot ─────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  loadData().then(() => showView("dashboard"));
+});
+
+async function loadData() {
+  [allParks, allTrips] = await Promise.all([
+    gas("getAllParks"),
+    gas("getAllTrips"),
+  ]);
+}
+
+// ── Navigation ───────────────────────────────────────────────
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+  const nav = document.getElementById(`nav-${view}`);
+  if (nav) nav.classList.add("active");
+  editingSlug = null;
+
+  const titles = { dashboard:"Dashboard", parks:"Parks", checklist:"Checklist", trips:"Trips" };
+  document.getElementById("topbar-title").textContent = titles[view] || view;
+
+  const actions = document.getElementById("topbar-actions");
+  actions.innerHTML = "";
+
+  if (view === "parks") {
+    btn(actions, "+ New Park", "btn-primary", () => showParkForm(null));
+    showParks();
+  } else if (view === "trips") {
+    btn(actions, "+ New Trip", "btn-primary", () => showTripForm(null));
+    showTrips();
+  } else if (view === "checklist") {
+    showChecklist();
+  } else {
+    showDashboard();
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+function showDashboard() {
+  const visited = allParks.filter(p => p.visited === "TRUE" || p.visited === true);
+  const planning = allParks.filter(p => !p.visited || p.visited === "FALSE");
+  const pct = Math.round((visited.length / 63) * 100);
+
+  const states = [...new Set(allParks.flatMap(p => split(p.state)).filter(Boolean))].length;
+  const trips  = allTrips.length;
+
+  const el = document.getElementById("main-content");
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__num">${visited.length}</div>
+        <div class="stat-card__label">Parks Visited</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num">63</div>
+        <div class="stat-card__label">Total Parks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num">${states}</div>
+        <div class="stat-card__label">States</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__num">${trips}</div>
+        <div class="stat-card__label">Trips</div>
+      </div>
+    </div>
+
+    <div style="background:white;border-radius:6px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <strong>Progress to All 63</strong>
+        <span style="color:var(--forest);font-weight:bold;">${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:12px;color:#888;margin-top:6px;">${visited.length} visited · ${planning.length} logged in planning</div>
+    </div>
+
+    <h3 style="margin-bottom:12px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);">Recent Parks</h3>
+    <div class="park-list">
+      ${allParks.slice(-5).reverse().map(p => parkCardHTML(p)).join("")}
+    </div>
+  `;
+}
+
+// ── Parks list ───────────────────────────────────────────────
+function showParks(filter = "") {
+  const el = document.getElementById("main-content");
+  const filtered = filter
+    ? allParks.filter(p =>
+        p.title?.toLowerCase().includes(filter) ||
+        p.state?.toLowerCase().includes(filter) ||
+        p.trips?.toLowerCase().includes(filter))
+    : allParks;
+
+  el.innerHTML = `
+    <div class="filter-bar">
+      <input class="search-input" placeholder="Search parks, states, trips…"
+        oninput="showParks(this.value.toLowerCase())" value="${filter}">
+      <select class="filter-select" onchange="showParks(this.value.toLowerCase())">
+        <option value="">All statuses</option>
+        <option value="true">Visited</option>
+        <option value="false">Planning</option>
+      </select>
+    </div>
+    <div class="park-list">
+      ${filtered.length
+        ? filtered.map(p => parkCardHTML(p)).join("")
+        : '<div class="empty-state"><div class="empty-icon">🏔</div><p>No parks found</p></div>'}
+    </div>
+  `;
+}
+
+function parkCardHTML(p) {
+  const isVisited = p.visited === "TRUE" || p.visited === true;
+  const states    = split(p.state);
+  const trips     = split(p.trips);
+  const rating    = parseInt(p.rating) || 0;
+  return `
+    <div class="park-card park-card--${isVisited ? "visited" : "planning"}">
+      <div class="park-card__status">${isVisited ? "✅" : "🗺"}</div>
+      <div class="park-card__info">
+        <div class="park-card__title">${esc(p.title)}</div>
+        <div class="park-card__meta">${split(p.state).join(", ")}${p.designation ? " · " + p.designation : ""}</div>
+        <div class="park-card__tags">
+          ${states.map(s => `<span class="tag tag-state">${esc(s)}</span>`).join("")}
+          ${trips.map(t => `<span class="tag tag-trip">${esc(t)}</span>`).join("")}
+          ${rating ? `<span class="tag tag-rating">${"★".repeat(rating)}</span>` : ""}
+        </div>
+      </div>
+      <div class="park-card__actions">
+        ${p.google_maps_url ? `<a href="${p.google_maps_url}" target="_blank" class="btn btn-sm btn-secondary" title="Map">🗺</a>` : ""}
+        ${p.google_photos_url ? `<a href="${p.google_photos_url}" target="_blank" class="btn btn-sm btn-secondary" title="Photos">📷</a>` : ""}
+        <button class="btn btn-sm btn-secondary" onclick="showParkForm('${p.slug}')">Edit</button>
+        <button class="btn btn-sm btn-sky" onclick="exportOne('${p.slug}')">Export</button>
+      </div>
+    </div>`;
+}
+
+// ── Park form ─────────────────────────────────────────────────
+async function showParkForm(slug) {
+  editingSlug = slug;
+  const p = slug ? allParks.find(x => x.slug === slug) || {} : {};
+  const el = document.getElementById("main-content");
+  document.getElementById("topbar-title").textContent = slug ? `Edit: ${p.title}` : "New Park";
+
+  const actions = document.getElementById("topbar-actions");
+  actions.innerHTML = "";
+  btn(actions, "← Back", "btn-secondary", () => showView("parks"));
+
+  const tripOptions = allTrips.map(t => `<option value="${esc(t.title)}" ${split(p.trips).includes(t.title) ? "selected" : ""}>${esc(t.title)}</option>`).join("");
+
+  el.innerHTML = `
+    <div class="park-form">
+      <div class="form-section">Identity</div>
+      <div class="form-grid">
+        <div class="field form-full">
+          <label>Title *</label>
+          <input id="f-title" value="${esc(p.title || "")}" placeholder="Grand Canyon">
+        </div>
+        <div class="field">
+          <label>NPS Park Code</label>
+          <input id="f-code" value="${esc(p.park_code || "")}" placeholder="GRCA">
+          <span class="field-hint">4-letter NPS code (optional)</span>
+        </div>
+        <div class="field">
+          <label>Designation</label>
+          <select id="f-desig">
+            ${["National Park","National Monument","National Seashore","National Historic Site","National Recreation Area","National Preserve","Other"]
+              .map(d => `<option ${(p.designation||"National Park")===d?"selected":""}>${d}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>State(s)</label>
+          <input id="f-state" value="${esc(p.state || "")}" placeholder="Arizona, Utah">
+          <span class="field-hint">Comma-separated</span>
+        </div>
+        <div class="field">
+          <label>Region(s)</label>
+          <input id="f-regions" value="${esc(p.regions || "")}" placeholder="Southwest, Colorado Plateau">
+          <span class="field-hint">Comma-separated</span>
+        </div>
+      </div>
+
+      <div class="form-section">Status</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Status</label>
+          <div class="checkbox-row">
+            <input type="checkbox" id="f-visited" ${(p.visited==="TRUE"||p.visited===true)?"checked":""}>
+            <label for="f-visited" style="text-transform:none;font-weight:normal;font-size:14px;color:var(--bark);">Visited</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Rating</label>
+          <div class="star-rating" id="star-rating">
+            ${[5,4,3,2,1].map(n => `
+              <input type="radio" name="rating" id="star${n}" value="${n}" ${parseInt(p.rating)===n?"checked":""}>
+              <label for="star${n}" class="${parseInt(p.rating)>=n?"star-active":""}">★</label>
+            `).join("")}
+          </div>
+        </div>
+        <div class="field">
+          <label>Visit Date(s)</label>
+          <input id="f-dates" value="${esc(p.visit_dates || "")}" placeholder="2023-09-14, 2023-09-15">
+          <span class="field-hint">Comma-separated YYYY-MM-DD</span>
+        </div>
+        <div class="field">
+          <label>Trip(s)</label>
+          <input id="f-trips" value="${esc(p.trips || "")}" placeholder="Southwest 2023">
+          <span class="field-hint">Comma-separated; must match trip titles</span>
+        </div>
+      </div>
+
+      <div class="form-section">Links</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Google Maps URL</label>
+          <input id="f-maps" type="url" value="${esc(p.google_maps_url || "")}" placeholder="https://maps.google.com/…">
+        </div>
+        <div class="field">
+          <label>Google Photos URL</label>
+          <input id="f-photos" type="url" value="${esc(p.google_photos_url || "")}" placeholder="https://photos.google.com/album/…">
+        </div>
+        <div class="field form-full">
+          <label>NPS Page URL</label>
+          <input id="f-nps" type="url" value="${esc(p.nps_url || "")}" placeholder="Leave blank to auto-build from code">
+        </div>
+      </div>
+
+      <div class="form-section">Content</div>
+      <div class="form-grid">
+        <div class="field form-full">
+          <label>One-line Summary</label>
+          <input id="f-summary" value="${esc(p.summary || "")}" placeholder="A short memorable line shown on the checklist">
+        </div>
+        <div class="field form-full">
+          <label>Highlights</label>
+          <input id="f-highlights" value="${esc(p.highlights || "")}" placeholder="Sunrise at Mather Point | Bright Angel Trail | Condor sighting">
+          <span class="field-hint">Pipe-separated list</span>
+        </div>
+        <div class="field form-full">
+          <label>Planning Notes</label>
+          <textarea id="f-planning" rows="4" placeholder="What to know before you go…">${esc(p.planning_notes || "")}</textarea>
+        </div>
+        <div class="field form-full">
+          <label>Tips (post-visit)</label>
+          <textarea id="f-tips" rows="4" placeholder="Advice for future visitors…">${esc(p.tips || "")}</textarea>
+        </div>
+        <div class="field form-full">
+          <label>Journal Body (Markdown)</label>
+          <textarea id="f-body" rows="12" placeholder="Write your full entry in Markdown here…">${esc(p.body || "")}</textarea>
+          <span class="field-hint">Supports Markdown. Use shortcodes like {{&lt; map-link &gt;}} in the exported file.</span>
+        </div>
+        <div class="field">
+          <label>Would Return?</label>
+          <div class="checkbox-row">
+            <input type="checkbox" id="f-return" ${(p.would_return==="TRUE"||p.would_return===true)?"checked":""}>
+            <label for="f-return" style="text-transform:none;font-weight:normal;font-size:14px;color:var(--bark);">Yes, would return</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+        <button class="btn btn-primary" onclick="savePark()">💾 Save</button>
+        <button class="btn btn-sky" onclick="saveAndExport()">💾 Save + Export MD</button>
+        ${slug ? `<button class="btn btn-danger" onclick="deletePark('${slug}')">🗑 Delete</button>` : ""}
+        <button class="btn btn-secondary" onclick="showView('parks')">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  // Star rating interactivity
+  document.querySelectorAll(".star-rating label").forEach((lbl, i, all) => {
+    lbl.addEventListener("mouseover", () => {
+      all.forEach((l, j) => l.classList.toggle("star-active", j >= i));
+    });
+    lbl.addEventListener("mouseout", () => {
+      const checked = document.querySelector(".star-rating input:checked");
+      const val = checked ? parseInt(checked.value) : 0;
+      all.forEach((l, j) => l.classList.toggle("star-active", j >= (5 - val)));
+    });
+  });
+}
+
+async function savePark() {
+  const park = collectParkForm();
+  if (!park.title) { toast("Title is required", "error"); return; }
+  const res = await gas("savePark", park);
+  if (res.ok) {
+    toast("Park saved ✓", "success");
+    await loadData();
+    showView("parks");
+  } else {
+    toast("Save failed", "error");
+  }
+}
+
+async function saveAndExport() {
+  const park = collectParkForm();
+  if (!park.title) { toast("Title is required", "error"); return; }
+  const res = await gas("savePark", park);
+  if (res.ok) {
+    await gas("exportPark", res.slug);
+    toast("Saved + exported to Drive ✓", "success");
+    await loadData();
+    showView("parks");
+  }
+}
+
+function collectParkForm() {
+  const checked = document.querySelector(".star-rating input:checked");
+  return {
+    slug: editingSlug || "",
+    title: v("f-title"), park_code: v("f-code"),
+    designation: v("f-desig"), state: v("f-state"),
+    regions: v("f-regions"), visited: document.getElementById("f-visited").checked,
+    rating: checked ? checked.value : 0,
+    visit_dates: v("f-dates"), trips: v("f-trips"),
+    google_maps_url: v("f-maps"), google_photos_url: v("f-photos"),
+    nps_url: v("f-nps"), summary: v("f-summary"),
+    highlights: v("f-highlights"), planning_notes: v("f-planning"),
+    tips: v("f-tips"), body: v("f-body"),
+    would_return: document.getElementById("f-return").checked,
+  };
+}
+
+async function deletePark(slug) {
+  if (!confirm("Delete this park entry? This cannot be undone.")) return;
+  await gas("deletePark", slug);
+  toast("Deleted", "success");
+  await loadData();
+  showView("parks");
+}
+
+// ── Checklist ─────────────────────────────────────────────────
+async function showChecklist() {
+  const ALL_PARKS_URL = "https://raw.githubusercontent.com/nickvdyck/us-national-parks/master/parks.json";
+  const el = document.getElementById("main-content");
+
+  // Build lookup from slug
+  const visitedMap = {};
+  allParks.forEach(p => {
+    if (p.park_code) visitedMap[p.park_code.toUpperCase()] = p;
+    else visitedMap[p.title.toLowerCase()] = p;
+  });
+
+  const MASTER = getMasterList();
+
+  // Collect unique designations for filter
+  const designations = [...new Set(MASTER.map(p => p.designation))].sort();
+
+  function renderChecklist(filterDesig = "", filterText = "") {
+    let sites = MASTER;
+    if (filterDesig) sites = sites.filter(p => p.designation === filterDesig);
+    if (filterText)  sites = sites.filter(p =>
+      p.name.toLowerCase().includes(filterText) ||
+      p.state.toLowerCase().includes(filterText) ||
+      p.region.toLowerCase().includes(filterText));
+
+    const visitedCount = sites.filter(p => {
+      const e = visitedMap[p.code] || visitedMap[p.name.toLowerCase()];
+      return e && (e.visited==="TRUE"||e.visited===true);
+    }).length;
+    const total = sites.length;
+    const pct = total ? Math.round(visitedCount/total*100) : 0;
+
+    const rows = sites.map(park => {
+      const entry = visitedMap[park.code] || visitedMap[park.name.toLowerCase()];
+      const isVisited = entry && (entry.visited === "TRUE" || entry.visited === true);
+      const rating = entry ? parseInt(entry.rating) || 0 : 0;
+      return `
+        <tr>
+          <td><span class="${isVisited ? "check-yes" : "check-no"}">${isVisited ? "✓" : "○"}</span></td>
+          <td>${entry ? `<a href="#" onclick="showParkForm('${entry.slug}');return false;" style="color:var(--forest);font-weight:bold;">${esc(park.name)}</a>` : esc(park.name)}</td>
+          <td>${park.state}</td>
+          <td><span style="font-size:11px;color:#888;">${park.designation}</span></td>
+          <td>${park.region}</td>
+          <td>${rating ? "★".repeat(rating) : ""}</td>
+          <td>${entry?.summary ? `<span style="color:#666;font-size:12px;">${esc(entry.summary.substring(0,50))}…</span>` : ""}</td>
+          <td>
+            ${entry?.google_maps_url ? `<a href="${entry.google_maps_url}" target="_blank" title="Map">🗺</a> ` : ""}
+            ${entry?.google_photos_url ? `<a href="${entry.google_photos_url}" target="_blank" title="Photos">📷</a> ` : ""}
+            <a href="https://www.nps.gov/${park.code.toLowerCase()}" target="_blank" title="NPS">🏞</a>
+          </td>
+        </tr>`;
+    });
+
+    document.getElementById("cl-progress-bar").style.width = pct + "%";
+    document.getElementById("cl-stats").textContent = `${visitedCount} / ${total} (${pct}%)`;
+    document.getElementById("cl-tbody").innerHTML = rows.join("") || '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;">No results</td></tr>';
+  }
+
+  el.innerHTML = `
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+      <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="cl-progress-bar" style="width:0%"></div></div>
+      <strong id="cl-stats" style="white-space:nowrap;"></strong>
+    </div>
+    <div class="filter-bar" style="margin-bottom:12px;">
+      <input class="search-input" placeholder="Search name, state, region…"
+        oninput="renderChecklist(document.getElementById('cl-desig').value, this.value.toLowerCase())" style="flex:1;">
+      <select id="cl-desig" class="filter-select"
+        onchange="renderChecklist(this.value, document.querySelector('.search-input').value.toLowerCase())">
+        <option value="">All designations (${MASTER.length})</option>
+        ${designations.map(d => {
+          const cnt = MASTER.filter(p => p.designation===d).length;
+          return `<option value="${d}">${d} (${cnt})</option>`;
+        }).join("")}
+      </select>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="checklist-table">
+        <thead><tr>
+          <th>✓</th><th>Name</th><th>State</th><th>Designation</th><th>Region</th><th>Rating</th><th>Summary</th><th>Links</th>
+        </tr></thead>
+        <tbody id="cl-tbody"></tbody>
+      </table>
+    </div>`;
+
+  renderChecklist();
+}
+
+// ── Trips list ───────────────────────────────────────────────
+function showTrips() {
+  const el = document.getElementById("main-content");
+  el.innerHTML = `
+    <div class="park-list">
+      ${allTrips.length ? allTrips.map(t => tripCardHTML(t)).join("") : '<div class="empty-state"><div class="empty-icon">✈️</div><p>No trips yet</p></div>'}
+    </div>`;
+}
+
+function tripCardHTML(t) {
+  const parks = allParks.filter(p => split(p.trips).includes(t.title));
+  return `
+    <div class="park-card">
+      <div class="park-card__status">✈️</div>
+      <div class="park-card__info">
+        <div class="park-card__title">${esc(t.title)}</div>
+        <div class="park-card__meta">${t.start_date || ""} ${t.end_date ? "→ " + t.end_date : ""} · ${parks.length} park(s)</div>
+        <div class="park-card__tags">
+          ${split(t.states).map(s => `<span class="tag tag-state">${esc(s)}</span>`).join("")}
+        </div>
+      </div>
+      <div class="park-card__actions">
+        ${t.google_maps_url ? `<a href="${t.google_maps_url}" target="_blank" class="btn btn-sm btn-secondary">🗺 Map</a>` : ""}
+        ${t.google_photos_url ? `<a href="${t.google_photos_url}" target="_blank" class="btn btn-sm btn-secondary">📷 Photos</a>` : ""}
+        <button class="btn btn-sm btn-secondary" onclick="showTripForm('${t.slug}')">Edit</button>
+      </div>
+    </div>`;
+}
+
+async function showTripForm(slug) {
+  editingSlug = slug;
+  const t = slug ? allTrips.find(x => x.slug === slug) || {} : {};
+  const el = document.getElementById("main-content");
+  document.getElementById("topbar-title").textContent = slug ? `Edit Trip: ${t.title}` : "New Trip";
+
+  const actions = document.getElementById("topbar-actions");
+  actions.innerHTML = "";
+  btn(actions, "← Back", "btn-secondary", () => showView("trips"));
+
+  const parkBadges = allParks.filter(p => split(p.trips).includes(t.title));
+
+  el.innerHTML = `
+    <div class="park-form">
+      <div class="form-section">Trip Info</div>
+      <div class="form-grid">
+        <div class="field form-full">
+          <label>Trip Title *</label>
+          <input id="t-title" value="${esc(t.title || "")}" placeholder="Southwest 2023">
+        </div>
+        <div class="field"><label>Start Date</label><input id="t-start" type="date" value="${t.start_date || ""}"></div>
+        <div class="field"><label>End Date</label><input id="t-end" type="date" value="${t.end_date || ""}"></div>
+        <div class="field">
+          <label>States</label>
+          <input id="t-states" value="${esc(t.states || "")}" placeholder="Arizona, Utah">
+        </div>
+        <div class="field">
+          <label>Regions</label>
+          <input id="t-regions" value="${esc(t.regions || "")}" placeholder="Southwest">
+        </div>
+      </div>
+
+      <div class="form-section">Links</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Google Maps Route URL</label>
+          <input id="t-maps" type="url" value="${esc(t.google_maps_url || "")}" placeholder="Custom map link">
+        </div>
+        <div class="field">
+          <label>Google Photos Album URL</label>
+          <input id="t-photos" type="url" value="${esc(t.google_photos_url || "")}" placeholder="Full trip album">
+        </div>
+      </div>
+
+      <div class="form-section">Content</div>
+      <div class="form-grid">
+        <div class="field form-full">
+          <label>Summary</label>
+          <input id="t-summary" value="${esc(t.summary || "")}" placeholder="One-line description of the trip">
+        </div>
+        <div class="field form-full">
+          <label>Highlights</label>
+          <input id="t-highlights" value="${esc(t.highlights || "")}" placeholder="Grand Canyon sunrise | Narrows hike | …">
+          <span class="field-hint">Pipe-separated</span>
+        </div>
+        <div class="field form-full">
+          <label>Body (Markdown)</label>
+          <textarea id="t-body" rows="12">${esc(t.body || "")}</textarea>
+        </div>
+      </div>
+
+      ${parkBadges.length ? `
+        <div class="form-section">Parks on This Trip</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          ${parkBadges.map(p => `<a href="#" onclick="showParkForm('${p.slug}');return false;" class="tag tag-trip">${esc(p.title)}</a>`).join("")}
+        </div>` : ""}
+
+      <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+        <button class="btn btn-primary" onclick="saveTrip()">💾 Save Trip</button>
+        <button class="btn btn-secondary" onclick="showView('trips')">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function saveTrip() {
+  const trip = {
+    slug: editingSlug || "",
+    title: v("t-title"), start_date: v("t-start"), end_date: v("t-end"),
+    states: v("t-states"), regions: v("t-regions"),
+    google_maps_url: v("t-maps"), google_photos_url: v("t-photos"),
+    summary: v("t-summary"), highlights: v("t-highlights"), body: v("t-body"),
+  };
+  if (!trip.title) { toast("Title required", "error"); return; }
+  const res = await gas("saveTrip", trip);
+  if (res.ok) {
+    toast("Trip saved ✓", "success");
+    await loadData();
+    showView("trips");
+  }
+}
+
+// ── Export / push ─────────────────────────────────────────────
+async function exportOne(slug) {
+  toast("Exporting…");
+  const res = await gas("exportPark", slug);
+  toast(res.ok ? "Exported to Drive ✓" : "Export failed", res.ok ? "success" : "error");
+}
+
+async function exportAll() {
+  toast("Exporting all…");
+  await gas("exportAllParks");
+  await gas("exportAllTrips");
+  toast("All exported to Drive ✓", "success");
+}
+
+async function pushGitHub() {
+  toast("Pushing to GitHub…");
+  await gas("pushAllToGitHub");
+  toast("Pushed ✓", "success");
+}
+
+// ── Master park list ─────────────────────────────────────────
+function getMasterList() {
+  return [
+    {name:"Antietam",code:"ANTI",state:"Maryland",designation:"National Battlefield",region:"Mid-Atlantic"},
+    {name:"Big Hole",code:"BIHO",state:"Montana",designation:"National Battlefield",region:"Rocky Mountains"},
+    {name:"Brices Cross Roads",code:"BRCR",state:"Mississippi",designation:"National Battlefield",region:"South"},
+    {name:"Cowpens",code:"COWP",state:"South Carolina",designation:"National Battlefield",region:"Southeast"},
+    {name:"Fort Donelson",code:"FODO",state:"Tennessee",designation:"National Battlefield",region:"Southeast"},
+    {name:"Fort Necessity",code:"FONE",state:"Pennsylvania",designation:"National Battlefield",region:"Mid-Atlantic"},
+    {name:"Monocacy",code:"MONO",state:"Maryland",designation:"National Battlefield",region:"Mid-Atlantic"},
+    {name:"Moores Creek",code:"MOCR",state:"North Carolina",designation:"National Battlefield",region:"Southeast"},
+    {name:"Petersburg",code:"PETE",state:"Virginia",designation:"National Battlefield",region:"Appalachian"},
+    {name:"Stones River",code:"STRI",state:"Tennessee",designation:"National Battlefield",region:"Southeast"},
+    {name:"Tupelo",code:"TUPE",state:"Mississippi",designation:"National Battlefield",region:"South"},
+    {name:"Wilson's Creek",code:"WICR",state:"Missouri",designation:"National Battlefield",region:"Midwest"},
+    {name:"Kennesaw Mountain",code:"KEMO",state:"Georgia",designation:"National Battlefield Park",region:"Southeast"},
+    {name:"Manassas",code:"MANA",state:"Virginia",designation:"National Battlefield Park",region:"Appalachian"},
+    {name:"Manassas National Battlefield Park",code:"MANA",state:"Virginia",designation:"National Battlefield Park",region:"Appalachian"},
+    {name:"Richmond",code:"RICH",state:"Virginia",designation:"National Battlefield Park",region:"Appalachian"},
+    {name:"Brice's Cross Roads",code:"BRCR",state:"Mississippi",designation:"National Battlefield Site",region:"South"},
+    {name:"Abraham Lincoln Birthplace",code:"ABLI",state:"Kentucky",designation:"National Historic Site",region:"South"},
+    {name:"Allegheny Portage Railroad",code:"ALPO",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Andersonville",code:"ANDE",state:"Georgia",designation:"National Historic Site",region:"Southeast"},
+    {name:"Andrew Johnson",code:"ANJO",state:"Tennessee",designation:"National Historic Site",region:"Southeast"},
+    {name:"Bent's Old Fort",code:"BEOL",state:"Colorado",designation:"National Historic Site",region:"Rocky Mountains"},
+    {name:"Boston African American",code:"BOAF",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"Brown v. Board of Education",code:"BRVB",state:"Kansas",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Carl Sandburg Home",code:"CARL",state:"North Carolina",designation:"National Historic Site",region:"Southeast"},
+    {name:"Carter G. Woodson Home",code:"CAWO",state:"District of Columbia",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Charles Pinckney",code:"CHPI",state:"South Carolina",designation:"National Historic Site",region:"Southeast"},
+    {name:"Christiansted",code:"CHRI",state:"US Virgin Islands",designation:"National Historic Site",region:"Caribbean"},
+    {name:"Clara Barton",code:"CLBA",state:"Maryland",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Edgar Allan Poe",code:"EDAL",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Eisenhower",code:"EISE",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Eleanor Roosevelt",code:"ELRO",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Eugene O'Neill",code:"EUON",state:"California",designation:"National Historic Site",region:"Pacific Coast"},
+    {name:"Ford's Theatre",code:"FOTH",state:"District of Columbia",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Fort Bowie",code:"FOBO",state:"Arizona",designation:"National Historic Site",region:"Southwest"},
+    {name:"Fort Davis",code:"FODA",state:"Texas",designation:"National Historic Site",region:"Southwest"},
+    {name:"Fort Laramie",code:"FOLA",state:"Wyoming",designation:"National Historic Site",region:"Rocky Mountains"},
+    {name:"Fort Larned",code:"FOLS",state:"Kansas",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Fort Raleigh",code:"FORA",state:"North Carolina",designation:"National Historic Site",region:"Southeast"},
+    {name:"Fort Scott",code:"FOSC",state:"Kansas",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Fort Smith",code:"FOSM",state:"Arkansas",designation:"National Historic Site",region:"South"},
+    {name:"Fort Union Trading Post",code:"FOUS",state:"North Dakota",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Fort Vancouver",code:"FOVA",state:"Washington",designation:"National Historic Site",region:"Pacific Northwest"},
+    {name:"Frederick Douglass",code:"FRDO",state:"District of Columbia",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Frederick Law Olmsted",code:"FRLA",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"Friendship Hill",code:"FRHI",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Gloria Dei (Old Swedes') Church",code:"GLDE",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Golden Spike",code:"GOSP",state:"Utah",designation:"National Historic Site",region:"Southwest"},
+    {name:"Grant-Kohrs Ranch",code:"GRKO",state:"Montana",designation:"National Historic Site",region:"Rocky Mountains"},
+    {name:"Hampton",code:"HAMP",state:"Maryland",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Harry S Truman",code:"HSTR",state:"Missouri",designation:"National Historic Site",region:"Midwest"},
+    {name:"Herbert Hoover",code:"HEHO",state:"Iowa",designation:"National Historic Site",region:"Midwest"},
+    {name:"Home of Franklin D. Roosevelt",code:"HOFR",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Hopewell Furnace",code:"HOFU",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Hubbell Trading Post",code:"HUTR",state:"Arizona",designation:"National Historic Site",region:"Southwest"},
+    {name:"James A. Garfield",code:"JAGA",state:"Ohio",designation:"National Historic Site",region:"Midwest"},
+    {name:"Jimmy Carter",code:"JICA",state:"Georgia",designation:"National Historic Site",region:"Southeast"},
+    {name:"John Fitzgerald Kennedy",code:"JOFI",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"John Muir",code:"JOMU",state:"California",designation:"National Historic Site",region:"Pacific Coast"},
+    {name:"Knife River Indian Villages",code:"KNRI",state:"North Dakota",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Lincoln Home",code:"LIHO",state:"Illinois",designation:"National Historic Site",region:"Midwest"},
+    {name:"Little Rock Central High School",code:"CHSC",state:"Arkansas",designation:"National Historic Site",region:"South"},
+    {name:"Longfellow House-Washington's HQ",code:"LONG",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"Maggie L. Walker",code:"MAWA",state:"Virginia",designation:"National Historic Site",region:"Appalachian"},
+    {name:"Martin Luther King Jr.",code:"MALU",state:"Georgia",designation:"National Historic Site",region:"Southeast"},
+    {name:"Martin Van Buren",code:"MAVA",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Mary McLeod Bethune Council House",code:"MAMC",state:"District of Columbia",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Nicodemus",code:"NICO",state:"Kansas",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Ninety Six",code:"NISI",state:"South Carolina",designation:"National Historic Site",region:"Southeast"},
+    {name:"Palo Alto Battlefield",code:"PAAL",state:"Texas",designation:"National Historic Site",region:"Southwest"},
+    {name:"Pecos",code:"PECO",state:"New Mexico",designation:"National Historic Site",region:"Southwest"},
+    {name:"Puukohola Heiau",code:"PUHE",state:"Hawaii",designation:"National Historic Site",region:"Pacific"},
+    {name:"Sagamore Hill",code:"SAHI",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Saint-Gaudens",code:"SAGA",state:"New Hampshire",designation:"National Historic Site",region:"Northeast"},
+    {name:"Salem Maritime",code:"SAMA",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"San Juan",code:"SAJU",state:"Puerto Rico",designation:"National Historic Site",region:"Caribbean"},
+    {name:"Saugus Iron Works",code:"SAIR",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"Sewall-Belmont House",code:"SEHU",state:"District of Columbia",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Springfield Armory",code:"SPAR",state:"Massachusetts",designation:"National Historic Site",region:"Northeast"},
+    {name:"Steamtown",code:"STEA",state:"Pennsylvania",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Thenodore Roosevelt's Elkhorn Ranch",code:"TRTE",state:"North Dakota",designation:"National Historic Site",region:"Great Plains"},
+    {name:"Theodore Roosevelt Birthplace",code:"THRB",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Theodore Roosevelt Inaugural",code:"THRI",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Thomas Stone",code:"THST",state:"Maryland",designation:"National Historic Site",region:"Mid-Atlantic"},
+    {name:"Touro Synagogue",code:"TOSY",state:"Rhode Island",designation:"National Historic Site",region:"Northeast"},
+    {name:"Tuskegee Airmen",code:"TUAI",state:"Alabama",designation:"National Historic Site",region:"Southeast"},
+    {name:"Tuskegee Institute",code:"TUIN",state:"Alabama",designation:"National Historic Site",region:"Southeast"},
+    {name:"Ulysses S. Grant",code:"ULSG",state:"Missouri",designation:"National Historic Site",region:"Midwest"},
+    {name:"Vanderbilt Mansion",code:"VAMA",state:"New York",designation:"National Historic Site",region:"Northeast"},
+    {name:"Washita Battlefield",code:"WABA",state:"Oklahoma",designation:"National Historic Site",region:"South"},
+    {name:"Whitman Mission",code:"WHMI",state:"Washington",designation:"National Historic Site",region:"Pacific Northwest"},
+    {name:"William Howard Taft",code:"WIHO",state:"Ohio",designation:"National Historic Site",region:"Midwest"},
+    {name:"Overmountain Victory Trail",code:"OVVI",state:"North Carolina",designation:"National Historic Trail",region:"Southeast"},
+    {name:"Adams",code:"ADAM",state:"Massachusetts",designation:"National Historical Park",region:"Northeast"},
+    {name:"Appomattox Court House",code:"APCO",state:"Virginia",designation:"National Historical Park",region:"Appalachian"},
+    {name:"Boston",code:"BOST",state:"Massachusetts",designation:"National Historical Park",region:"Northeast"},
+    {name:"Cane River Creole",code:"CARI",state:"Louisiana",designation:"National Historical Park",region:"South"},
+    {name:"Cedar Creek and Belle Grove",code:"CEBE",state:"Virginia",designation:"National Historical Park",region:"Appalachian"},
+    {name:"Chaco Culture",code:"CHCU",state:"New Mexico",designation:"National Historical Park",region:"Southwest"},
+    {name:"Colonial",code:"COLO",state:"Virginia",designation:"National Historical Park",region:"Appalachian"},
+    {name:"Cumberland Gap",code:"CUGA",state:"Kentucky",designation:"National Historical Park",region:"South"},
+    {name:"Dayton Aviation Heritage",code:"DAAV",state:"Ohio",designation:"National Historical Park",region:"Midwest"},
+    {name:"Ebey's Landing",code:"EBLA",state:"Washington",designation:"National Historical Park",region:"Pacific Northwest"},
+    {name:"First State",code:"FRST",state:"Delaware",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"George Rogers Clark",code:"GERO",state:"Indiana",designation:"National Historical Park",region:"Midwest"},
+    {name:"Harpers Ferry",code:"HAFE",state:"West Virginia",designation:"National Historical Park",region:"Appalachian"},
+    {name:"Harriet Tubman",code:"HART",state:"Maryland",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"Harriet Tubman Underground Railroad",code:"HATU",state:"Maryland",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"Historic Camden",code:"HICA",state:"South Carolina",designation:"National Historical Park",region:"Southeast"},
+    {name:"Hopewell Culture",code:"HOCU",state:"Ohio",designation:"National Historical Park",region:"Midwest"},
+    {name:"Independence",code:"INDE",state:"Pennsylvania",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"Jean Lafitte",code:"JELA",state:"Louisiana",designation:"National Historical Park",region:"South"},
+    {name:"Kalaupapa",code:"KALA",state:"Hawaii",designation:"National Historical Park",region:"Pacific"},
+    {name:"Kaloko-Honokōhau",code:"KAHO",state:"Hawaii",designation:"National Historical Park",region:"Pacific"},
+    {name:"Keweenaw",code:"KEWE",state:"Michigan",designation:"National Historical Park",region:"Midwest"},
+    {name:"Klondike Gold Rush",code:"KLGO",state:"Alaska",designation:"National Historical Park",region:"Alaska"},
+    {name:"Klondike Gold Rush - Seattle",code:"KLSE",state:"Washington",designation:"National Historical Park",region:"Pacific Northwest"},
+    {name:"Lewis and Clark",code:"LECL",state:"Oregon",designation:"National Historical Park",region:"Pacific Northwest"},
+    {name:"Lowell",code:"LOWE",state:"Massachusetts",designation:"National Historical Park",region:"Northeast"},
+    {name:"Lyndon B. Johnson",code:"LYJO",state:"Texas",designation:"National Historical Park",region:"Southwest"},
+    {name:"Manzanar",code:"MANZ",state:"California",designation:"National Historical Park",region:"Pacific Coast"},
+    {name:"Marsh-Billings-Rockefeller",code:"MABI",state:"Vermont",designation:"National Historical Park",region:"Northeast"},
+    {name:"Minute Man",code:"MIMA",state:"Massachusetts",designation:"National Historical Park",region:"Northeast"},
+    {name:"Morristown",code:"MORR",state:"New Jersey",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"Natchez",code:"NATC",state:"Mississippi",designation:"National Historical Park",region:"South"},
+    {name:"New Bedford Whaling",code:"NEBE",state:"Massachusetts",designation:"National Historical Park",region:"Northeast"},
+    {name:"New Orleans Jazz",code:"JAZZ",state:"Louisiana",designation:"National Historical Park",region:"South"},
+    {name:"Nez Perce",code:"NEPE",state:"Idaho",designation:"National Historical Park",region:"Pacific Northwest"},
+    {name:"Paterson Great Falls",code:"PAGR",state:"New Jersey",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"Pu'uhonua o Hōnaunau",code:"PUHO",state:"Hawaii",designation:"National Historical Park",region:"Pacific"},
+    {name:"Rosie the Riveter WWII Home Front",code:"RORI",state:"California",designation:"National Historical Park",region:"Pacific Coast"},
+    {name:"Salt River Bay",code:"SARI",state:"US Virgin Islands",designation:"National Historical Park",region:"Caribbean"},
+    {name:"San Antonio Missions",code:"SAAN",state:"Texas",designation:"National Historical Park",region:"Southwest"},
+    {name:"San Francisco Maritime",code:"SAFR",state:"California",designation:"National Historical Park",region:"Pacific Coast"},
+    {name:"San Juan Island",code:"SAJH",state:"Washington",designation:"National Historical Park",region:"Pacific Northwest"},
+    {name:"Saratoga",code:"SARA",state:"New York",designation:"National Historical Park",region:"Northeast"},
+    {name:"Sitka",code:"SITK",state:"Alaska",designation:"National Historical Park",region:"Alaska"},
+    {name:"Tule Lake",code:"TULE",state:"California",designation:"National Historical Park",region:"Pacific Coast"},
+    {name:"Valley Forge",code:"VAFO",state:"Pennsylvania",designation:"National Historical Park",region:"Mid-Atlantic"},
+    {name:"War in the Pacific",code:"WAPA",state:"Guam",designation:"National Historical Park",region:"Pacific"},
+    {name:"Weir Farm",code:"WEFA",state:"Connecticut",designation:"National Historical Park",region:"Northeast"},
+    {name:"Women's Rights",code:"WORI",state:"New York",designation:"National Historical Park",region:"Northeast"},
+    {name:"Apostle Islands",code:"APIS",state:"Wisconsin",designation:"National Lakeshore",region:"Midwest"},
+    {name:"Pictured Rocks",code:"PIRO",state:"Michigan",designation:"National Lakeshore",region:"Midwest"},
+    {name:"Sleeping Bear Dunes",code:"SLBE",state:"Michigan",designation:"National Lakeshore",region:"Midwest"},
+    {name:"Arlington House, The Robert E. Lee Memorial",code:"ARHO",state:"Virginia",designation:"National Memorial",region:"Appalachian"},
+    {name:"Chamizal",code:"CHAM",state:"Texas",designation:"National Memorial",region:"Southwest"},
+    {name:"Coronado",code:"CORO",state:"Arizona",designation:"National Memorial",region:"Southwest"},
+    {name:"De Soto",code:"DESO",state:"Florida",designation:"National Memorial",region:"Southeast"},
+    {name:"Federal Hall",code:"FEHA",state:"New York",designation:"National Memorial",region:"Northeast"},
+    {name:"Flight 93",code:"FLNI",state:"Pennsylvania",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Franklin Delano Roosevelt Memorial",code:"FRDE",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"General Grant",code:"GEGR",state:"New York",designation:"National Memorial",region:"Northeast"},
+    {name:"Hamilton Grange",code:"HAGR",state:"New York",designation:"National Memorial",region:"Northeast"},
+    {name:"Johnstown Flood",code:"JOFL",state:"Pennsylvania",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Korean War Veterans Memorial",code:"KOWA",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Lincoln Memorial",code:"LINC",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Lyndon Baines Johnson Memorial Grove",code:"LYBJ",state:"Virginia",designation:"National Memorial",region:"Appalachian"},
+    {name:"Martin Luther King Jr. Memorial",code:"MLKM",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Mount Rushmore",code:"MORU",state:"South Dakota",designation:"National Memorial",region:"Great Plains"},
+    {name:"Oklahoma City",code:"OKCI",state:"Oklahoma",designation:"National Memorial",region:"South"},
+    {name:"Pearl Harbor",code:"VALR",state:"Hawaii",designation:"National Memorial",region:"Pacific"},
+    {name:"Perry's Victory and International Peace Memorial",code:"PEVI",state:"Ohio",designation:"National Memorial",region:"Midwest"},
+    {name:"Port Chicago Naval Magazine",code:"POCH",state:"California",designation:"National Memorial",region:"Pacific Coast"},
+    {name:"Roger Williams",code:"ROWI",state:"Rhode Island",designation:"National Memorial",region:"Northeast"},
+    {name:"Thaddeus Kosciuszko",code:"THKO",state:"Pennsylvania",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Thomas Jefferson Memorial",code:"THJE",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"USS Arizona Memorial",code:"USAR",state:"Hawaii",designation:"National Memorial",region:"Pacific"},
+    {name:"Vietnam Veterans Memorial",code:"VIVE",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Washington Monument",code:"WAMO",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"World War I Memorial",code:"WWIM",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"World War II Memorial",code:"WWII",state:"District of Columbia",designation:"National Memorial",region:"Mid-Atlantic"},
+    {name:"Wright Brothers",code:"WRBR",state:"North Carolina",designation:"National Memorial",region:"Southeast"},
+    {name:"Chickamauga and Chattanooga",code:"CHCH",state:"Georgia",designation:"National Military Park",region:"Southeast"},
+    {name:"Fredericksburg and Spotsylvania",code:"FRSP",state:"Virginia",designation:"National Military Park",region:"Appalachian"},
+    {name:"Gettysburg",code:"GETT",state:"Pennsylvania",designation:"National Military Park",region:"Mid-Atlantic"},
+    {name:"Guilford Courthouse",code:"GUCO",state:"North Carolina",designation:"National Military Park",region:"Southeast"},
+    {name:"Horseshoe Bend",code:"HOBE",state:"Alabama",designation:"National Military Park",region:"Southeast"},
+    {name:"Kings Mountain",code:"KIMO",state:"South Carolina",designation:"National Military Park",region:"Southeast"},
+    {name:"Pea Ridge",code:"PERI",state:"Arkansas",designation:"National Military Park",region:"South"},
+    {name:"Shiloh",code:"SHIL",state:"Tennessee",designation:"National Military Park",region:"Southeast"},
+    {name:"Vicksburg",code:"VICK",state:"Mississippi",designation:"National Military Park",region:"South"},
+    {name:"African Burial Ground",code:"AFBG",state:"New York",designation:"National Monument",region:"Northeast"},
+    {name:"Agate Fossil Beds",code:"AGFO",state:"Nebraska",designation:"National Monument",region:"Great Plains"},
+    {name:"Alibates Flint Quarries",code:"ALFL",state:"Texas",designation:"National Monument",region:"Southwest"},
+    {name:"Aniakchak",code:"ANIA",state:"Alaska",designation:"National Monument",region:"Alaska"},
+    {name:"Aztec Ruins",code:"AZRU",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Bandelier",code:"BAND",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Bears Ears",code:"BEAR",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Booker T. Washington",code:"BOWA",state:"Virginia",designation:"National Monument",region:"Appalachian"},
+    {name:"Buck Island Reef",code:"BUIS",state:"US Virgin Islands",designation:"National Monument",region:"Caribbean"},
+    {name:"Cabrillo",code:"CABR",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Canyon de Chelly",code:"CACH",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Cape Krusenstern",code:"CAKR",state:"Alaska",designation:"National Monument",region:"Alaska"},
+    {name:"Capulin Volcano",code:"CAVO",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Casa Grande Ruins",code:"CAGR",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Castillo de San Marcos",code:"CASA",state:"Florida",designation:"National Monument",region:"Southeast"},
+    {name:"Castle Clinton",code:"CACL",state:"New York",designation:"National Monument",region:"Northeast"},
+    {name:"Cedar Breaks",code:"CEBR",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Cesar E. Chavez",code:"CECH",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Charles Young Buffalo Soldiers",code:"CHYO",state:"Ohio",designation:"National Monument",region:"Midwest"},
+    {name:"Chiricahua",code:"CHIR",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Colorado",code:"COLM",state:"Colorado",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"Craters of the Moon",code:"CRMO",state:"Idaho",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"Devils Postpile",code:"DEPO",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Devils Tower",code:"DETO",state:"Wyoming",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"Dinosaur",code:"DINO",state:"Colorado",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"El Malpais",code:"ELMA",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"El Morro",code:"ELMO",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Florissant Fossil Beds",code:"FLFO",state:"Colorado",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"Fort McHenry",code:"FOMC",state:"Maryland",designation:"National Monument",region:"Mid-Atlantic"},
+    {name:"Fort Monroe",code:"FOMR",state:"Virginia",designation:"National Monument",region:"Appalachian"},
+    {name:"Fort Ord",code:"FOOR",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Fort Stanwix",code:"FOST",state:"New York",designation:"National Monument",region:"Northeast"},
+    {name:"Fort Union",code:"FOUN",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Fossil Butte",code:"FOBU",state:"Wyoming",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"George Washington Birthplace",code:"GEWA",state:"Virginia",designation:"National Monument",region:"Appalachian"},
+    {name:"George Washington Carver",code:"GWCA",state:"Missouri",designation:"National Monument",region:"Midwest"},
+    {name:"Gila Cliff Dwellings",code:"GICL",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Governors Island",code:"GOIS",state:"New York",designation:"National Monument",region:"Northeast"},
+    {name:"Grand Staircase-Escalante",code:"GSES",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Hohokam Pima",code:"HOPIDESIGNATED",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Hovenweep",code:"HOVE",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Jewel Cave",code:"JECA",state:"South Dakota",designation:"National Monument",region:"Great Plains"},
+    {name:"John Day Fossil Beds",code:"JODA",state:"Oregon",designation:"National Monument",region:"Pacific Northwest"},
+    {name:"Katahdin Woods and Waters",code:"KAWW",state:"Maine",designation:"National Monument",region:"Northeast"},
+    {name:"Lava Beds",code:"LABE",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Little Bighorn Battlefield",code:"LIBI",state:"Montana",designation:"National Monument",region:"Rocky Mountains"},
+    {name:"Marianas Trench",code:"MARI",state:"Northern Mariana Islands",designation:"National Monument",region:"Pacific"},
+    {name:"Missouri National Recreational River",code:"MNRR",state:"Nebraska",designation:"National Monument",region:"Great Plains"},
+    {name:"Misty Fjords",code:"MIFI",state:"Alaska",designation:"National Monument",region:"Alaska"},
+    {name:"Montezuma Castle",code:"MOCA",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Muir Woods",code:"MUWO",state:"California",designation:"National Monument",region:"Pacific Coast"},
+    {name:"Natural Bridges",code:"NABR",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Navajo",code:"NAVA",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Newberry National Volcanic",code:"NBNM",state:"Oregon",designation:"National Monument",region:"Pacific Northwest"},
+    {name:"Ocmulgee Mounds",code:"OCMU",state:"Georgia",designation:"National Monument",region:"Southeast"},
+    {name:"Oregon Caves",code:"ORCA",state:"Oregon",designation:"National Monument",region:"Pacific Northwest"},
+    {name:"Organ Pipe Cactus",code:"ORPI",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Pacific Remote Islands",code:"PAIS",state:"Pacific Islands",designation:"National Monument",region:"Pacific"},
+    {name:"Papahānaumokuākea",code:"PAMA",state:"Hawaii",designation:"National Monument",region:"Pacific"},
+    {name:"Pipe Spring",code:"PISP",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Pipestone",code:"PIPE",state:"Minnesota",designation:"National Monument",region:"Midwest"},
+    {name:"Poverty Point",code:"POPO",state:"Louisiana",designation:"National Monument",region:"South"},
+    {name:"Prehistoric Trackways",code:"PRTR",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Pullman",code:"PULL",state:"Illinois",designation:"National Monument",region:"Midwest"},
+    {name:"Rainbow Bridge",code:"RABR",state:"Utah",designation:"National Monument",region:"Southwest"},
+    {name:"Rose Atoll",code:"ROSA",state:"American Samoa",designation:"National Monument",region:"Pacific"},
+    {name:"Russell Cave",code:"RUCA",state:"Alabama",designation:"National Monument",region:"Southeast"},
+    {name:"Salinas Pueblo Missions",code:"SAPU",state:"New Mexico",designation:"National Monument",region:"Southwest"},
+    {name:"Scott's Bluff",code:"SCBL",state:"Nebraska",designation:"National Monument",region:"Great Plains"},
+    {name:"Stonewall",code:"STON",state:"New York",designation:"National Monument",region:"Northeast"},
+    {name:"Sunset Crater Volcano",code:"SUCR",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Tonto",code:"TONT",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Tule Springs Fossil Beds",code:"TUSK",state:"Nevada",designation:"National Monument",region:"Southwest"},
+    {name:"Tuzigoot",code:"TUZI",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Virgin Islands Coral Reef",code:"VICR",state:"US Virgin Islands",designation:"National Monument",region:"Caribbean"},
+    {name:"Walnut Canyon",code:"WACA",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Wupatki",code:"WUPA",state:"Arizona",designation:"National Monument",region:"Southwest"},
+    {name:"Yucca House",code:"YUHO",state:"Colorado",designation:"National Monument",region:"Southwest"},
+    {name:"Acadia",code:"ACAD",state:"Maine",designation:"National Park",region:"Northeast"},
+    {name:"American Samoa",code:"NPSA",state:"American Samoa",designation:"National Park",region:"Pacific"},
+    {name:"Arches",code:"ARCH",state:"Utah",designation:"National Park",region:"Southwest"},
+    {name:"Badlands",code:"BADL",state:"South Dakota",designation:"National Park",region:"Great Plains"},
+    {name:"Big Bend",code:"BIBE",state:"Texas",designation:"National Park",region:"Southwest"},
+    {name:"Biscayne",code:"BISC",state:"Florida",designation:"National Park",region:"Southeast"},
+    {name:"Black Canyon of the Gunnison",code:"BLCA",state:"Colorado",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Bryce Canyon",code:"BRCA",state:"Utah",designation:"National Park",region:"Southwest"},
+    {name:"Canyonlands",code:"CANY",state:"Utah",designation:"National Park",region:"Southwest"},
+    {name:"Capitol Reef",code:"CARE",state:"Utah",designation:"National Park",region:"Southwest"},
+    {name:"Carlsbad Caverns",code:"CAVE",state:"New Mexico",designation:"National Park",region:"Southwest"},
+    {name:"Channel Islands",code:"CHIS",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Congaree",code:"CONG",state:"South Carolina",designation:"National Park",region:"Southeast"},
+    {name:"Crater Lake",code:"CRLA",state:"Oregon",designation:"National Park",region:"Pacific Northwest"},
+    {name:"Cuyahoga Valley",code:"CUVA",state:"Ohio",designation:"National Park",region:"Midwest"},
+    {name:"Death Valley",code:"DEVA",state:"California",designation:"National Park",region:"Southwest"},
+    {name:"Denali",code:"DENA",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Dry Tortugas",code:"DRTO",state:"Florida",designation:"National Park",region:"Southeast"},
+    {name:"Everglades",code:"EVER",state:"Florida",designation:"National Park",region:"Southeast"},
+    {name:"Gates of the Arctic",code:"GAAR",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Gateway Arch",code:"JEFF",state:"Missouri",designation:"National Park",region:"Midwest"},
+    {name:"Glacier",code:"GLAC",state:"Montana",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Glacier Bay",code:"GLBA",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Grand Canyon",code:"GRCA",state:"Arizona",designation:"National Park",region:"Southwest"},
+    {name:"Grand Teton",code:"GRTE",state:"Wyoming",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Great Basin",code:"GRBA",state:"Nevada",designation:"National Park",region:"Southwest"},
+    {name:"Great Sand Dunes",code:"GRSA",state:"Colorado",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Great Smoky Mountains",code:"GRSM",state:"Tennessee",designation:"National Park",region:"Southeast"},
+    {name:"Guadalupe Mountains",code:"GUMO",state:"Texas",designation:"National Park",region:"Southwest"},
+    {name:"Haleakalā",code:"HALE",state:"Hawaii",designation:"National Park",region:"Pacific"},
+    {name:"Hawaiʻi Volcanoes",code:"HAVO",state:"Hawaii",designation:"National Park",region:"Pacific"},
+    {name:"Hot Springs",code:"HOSP",state:"Arkansas",designation:"National Park",region:"South"},
+    {name:"Indiana Dunes",code:"INDU",state:"Indiana",designation:"National Park",region:"Midwest"},
+    {name:"Isle Royale",code:"ISRO",state:"Michigan",designation:"National Park",region:"Midwest"},
+    {name:"Joshua Tree",code:"JOTR",state:"California",designation:"National Park",region:"Southwest"},
+    {name:"Katmai",code:"KATM",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Kenai Fjords",code:"KEFJ",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Kings Canyon",code:"KICA",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Kobuk Valley",code:"KOVA",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Lake Clark",code:"LACL",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Lassen Volcanic",code:"LAVO",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Mammoth Cave",code:"MACA",state:"Kentucky",designation:"National Park",region:"South"},
+    {name:"Mesa Verde",code:"MEVE",state:"Colorado",designation:"National Park",region:"Southwest"},
+    {name:"Mount Rainier",code:"MORA",state:"Washington",designation:"National Park",region:"Pacific Northwest"},
+    {name:"New River Gorge",code:"NERI",state:"West Virginia",designation:"National Park",region:"Appalachian"},
+    {name:"North Cascades",code:"NOCA",state:"Washington",designation:"National Park",region:"Pacific Northwest"},
+    {name:"Olympic",code:"OLYM",state:"Washington",designation:"National Park",region:"Pacific Northwest"},
+    {name:"Petrified Forest",code:"PEFO",state:"Arizona",designation:"National Park",region:"Southwest"},
+    {name:"Pinnacles",code:"PINN",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Redwood",code:"REDW",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Rocky Mountain",code:"ROMO",state:"Colorado",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Saguaro",code:"SAGU",state:"Arizona",designation:"National Park",region:"Southwest"},
+    {name:"Sequoia",code:"SEQU",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Shenandoah",code:"SHEN",state:"Virginia",designation:"National Park",region:"Appalachian"},
+    {name:"Theodore Roosevelt",code:"THRO",state:"North Dakota",designation:"National Park",region:"Great Plains"},
+    {name:"Virgin Islands",code:"VIIS",state:"US Virgin Islands",designation:"National Park",region:"Caribbean"},
+    {name:"Voyageurs",code:"VOYA",state:"Minnesota",designation:"National Park",region:"Midwest"},
+    {name:"White Sands",code:"WHSA",state:"New Mexico",designation:"National Park",region:"Southwest"},
+    {name:"Wind Cave",code:"WICA",state:"South Dakota",designation:"National Park",region:"Great Plains"},
+    {name:"Wrangell-St. Elias",code:"WRST",state:"Alaska",designation:"National Park",region:"Alaska"},
+    {name:"Yellowstone",code:"YELL",state:"Wyoming",designation:"National Park",region:"Rocky Mountains"},
+    {name:"Yosemite",code:"YOSE",state:"California",designation:"National Park",region:"Pacific Coast"},
+    {name:"Zion",code:"ZION",state:"Utah",designation:"National Park",region:"Southwest"},
+    {name:"Baltimore-Washington Parkway",code:"BAWA",state:"Maryland",designation:"National Parkway",region:"Mid-Atlantic"},
+    {name:"Blue Ridge Parkway",code:"BLRI",state:"Virginia",designation:"National Parkway",region:"Appalachian"},
+    {name:"Colonial Parkway",code:"COLO",state:"Virginia",designation:"National Parkway",region:"Appalachian"},
+    {name:"George Washington Memorial Parkway",code:"GWMP",state:"Virginia",designation:"National Parkway",region:"Appalachian"},
+    {name:"John D. Rockefeller Jr. Memorial Parkway",code:"JODR",state:"Wyoming",designation:"National Parkway",region:"Rocky Mountains"},
+    {name:"Natchez Trace Parkway",code:"NATR",state:"Mississippi",designation:"National Parkway",region:"South"},
+    {name:"Suitland Parkway",code:"SUPA",state:"Maryland",designation:"National Parkway",region:"Mid-Atlantic"},
+    {name:"Bering Land Bridge",code:"BELA",state:"Alaska",designation:"National Preserve",region:"Alaska"},
+    {name:"Big Cypress",code:"BICY",state:"Florida",designation:"National Preserve",region:"Southeast"},
+    {name:"Big Thicket",code:"BITH",state:"Texas",designation:"National Preserve",region:"South"},
+    {name:"Little River Canyon",code:"LIRI",state:"Alabama",designation:"National Preserve",region:"Southeast"},
+    {name:"Mojave",code:"MOJA",state:"California",designation:"National Preserve",region:"Southwest"},
+    {name:"Noatak",code:"NOAT",state:"Alaska",designation:"National Preserve",region:"Alaska"},
+    {name:"Tallgrass Prairie",code:"TAPR",state:"Kansas",designation:"National Preserve",region:"Great Plains"},
+    {name:"Timucuan Ecological and Historic",code:"TIMU",state:"Florida",designation:"National Preserve",region:"Southeast"},
+    {name:"Yukon-Charley Rivers",code:"YUCH",state:"Alaska",designation:"National Preserve",region:"Alaska"},
+    {name:"Amistad",code:"AMIS",state:"Texas",designation:"National Recreation Area",region:"Southwest"},
+    {name:"Bighorn Canyon",code:"BICA",state:"Montana",designation:"National Recreation Area",region:"Rocky Mountains"},
+    {name:"Boston Harbor Islands",code:"BOHA",state:"Massachusetts",designation:"National Recreation Area",region:"Northeast"},
+    {name:"Chattahoochee River",code:"CHAT",state:"Georgia",designation:"National Recreation Area",region:"Southeast"},
+    {name:"Chickasaw",code:"CHIC",state:"Oklahoma",designation:"National Recreation Area",region:"South"},
+    {name:"Curecanti",code:"CURE",state:"Colorado",designation:"National Recreation Area",region:"Rocky Mountains"},
+    {name:"Delaware",code:"DELA",state:"New York",designation:"National Recreation Area",region:"Northeast"},
+    {name:"Delaware Water Gap",code:"DEWA",state:"New Jersey",designation:"National Recreation Area",region:"Mid-Atlantic"},
+    {name:"Gateway",code:"GATE",state:"New York",designation:"National Recreation Area",region:"Northeast"},
+    {name:"Gauley River",code:"GARI",state:"West Virginia",designation:"National Recreation Area",region:"Appalachian"},
+    {name:"Glen Canyon",code:"GLCA",state:"Arizona",designation:"National Recreation Area",region:"Southwest"},
+    {name:"Golden Gate",code:"GOGA",state:"California",designation:"National Recreation Area",region:"Pacific Coast"},
+    {name:"Lake Chelan",code:"LACH",state:"Washington",designation:"National Recreation Area",region:"Pacific Northwest"},
+    {name:"Lake Mead",code:"LAKE",state:"Nevada",designation:"National Recreation Area",region:"Southwest"},
+    {name:"Lake Meredith",code:"LAMR",state:"Texas",designation:"National Recreation Area",region:"Southwest"},
+    {name:"Lake Roosevelt",code:"LARO",state:"Washington",designation:"National Recreation Area",region:"Pacific Northwest"},
+    {name:"Mississippi National River and Recreation Area",code:"MISS",state:"Minnesota",designation:"National Recreation Area",region:"Midwest"},
+    {name:"Ross Lake",code:"ROLA",state:"Washington",designation:"National Recreation Area",region:"Pacific Northwest"},
+    {name:"Santa Monica Mountains",code:"SAMO",state:"California",designation:"National Recreation Area",region:"Pacific Coast"},
+    {name:"Whiskeytown",code:"WHIS",state:"California",designation:"National Recreation Area",region:"Pacific Coast"},
+    {name:"City of Rocks",code:"CIRO",state:"Idaho",designation:"National Reserve",region:"Rocky Mountains"},
+    {name:"Big South Fork National River and Recreation Area",code:"BISO",state:"Tennessee",designation:"National River",region:"Southeast"},
+    {name:"Buffalo National River",code:"BUFF",state:"Arkansas",designation:"National River",region:"South"},
+    {name:"Mississippi (Quad Cities to Bellevue)",code:"MISS",state:"Illinois",designation:"National River",region:"Midwest"},
+    {name:"Niobrara",code:"NIOB",state:"Nebraska",designation:"National Scenic River",region:"Great Plains"},
+    {name:"Current and Jacks Fork (Ozark Scenic Riverways)",code:"OZAR",state:"Missouri",designation:"National Scenic Riverway",region:"Midwest"},
+    {name:"St. Croix",code:"SACN",state:"Minnesota",designation:"National Scenic Riverway",region:"Midwest"},
+    {name:"Appalachian National Scenic Trail",code:"APPA",state:"Georgia",designation:"National Scenic Trail",region:"Appalachian"},
+    {name:"Ice Age National Scenic Trail",code:"IATR",state:"Wisconsin",designation:"National Scenic Trail",region:"Midwest"},
+    {name:"Natchez Trace National Scenic Trail",code:"NATT",state:"Mississippi",designation:"National Scenic Trail",region:"South"},
+    {name:"New England National Scenic Trail",code:"NEEN",state:"Connecticut",designation:"National Scenic Trail",region:"Northeast"},
+    {name:"Potomac Heritage National Scenic Trail",code:"POHE",state:"Maryland",designation:"National Scenic Trail",region:"Mid-Atlantic"},
+    {name:"Assateague Island",code:"ASIS",state:"Maryland",designation:"National Seashore",region:"Mid-Atlantic"},
+    {name:"Canaveral",code:"CANA",state:"Florida",designation:"National Seashore",region:"Southeast"},
+    {name:"Cape Cod",code:"CACO",state:"Massachusetts",designation:"National Seashore",region:"Northeast"},
+    {name:"Cape Hatteras",code:"CAHA",state:"North Carolina",designation:"National Seashore",region:"Southeast"},
+    {name:"Cape Lookout",code:"CALO",state:"North Carolina",designation:"National Seashore",region:"Southeast"},
+    {name:"Cumberland Island",code:"CUIS",state:"Georgia",designation:"National Seashore",region:"Southeast"},
+    {name:"Fire Island",code:"FIIS",state:"New York",designation:"National Seashore",region:"Northeast"},
+    {name:"Gulf Islands",code:"GUIS",state:"Florida",designation:"National Seashore",region:"Southeast"},
+    {name:"Padre Island",code:"PAIS",state:"Texas",designation:"National Seashore",region:"Southwest"},
+    {name:"Point Reyes",code:"PORE",state:"California",designation:"National Seashore",region:"Pacific Coast"},
+    {name:"Alagnak Wild River",code:"ALAG",state:"Alaska",designation:"National Wild River",region:"Alaska"},
+    {name:"Lower Delaware",code:"LODE",state:"Delaware",designation:"National Wild and Scenic River",region:"Mid-Atlantic"},
+    {name:"Rio Grande",code:"RIGR",state:"Texas",designation:"National Wild and Scenic River",region:"Southwest"},
+    {name:"Catoctin Mountain Park",code:"CATO",state:"Maryland",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Constitution Gardens",code:"COGR",state:"District of Columbia",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Fort Washington Park",code:"FOWA",state:"Maryland",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Greenbelt Park",code:"GREE",state:"Maryland",designation:"Park",region:"Mid-Atlantic"},
+    {name:"National Capital Parks",code:"NACE",state:"District of Columbia",designation:"Park",region:"Mid-Atlantic"},
+    {name:"National Mall and Memorial Parks",code:"NAMA",state:"District of Columbia",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Piscataway Park",code:"PISC",state:"Maryland",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Prince William Forest Park",code:"PRWI",state:"Virginia",designation:"Park",region:"Appalachian"},
+    {name:"Rock Creek Park",code:"ROCR",state:"District of Columbia",designation:"Park",region:"Mid-Atlantic"},
+    {name:"Wolf Trap National Park for the Performing Arts",code:"WOTR",state:"Virginia",designation:"Park",region:"Appalachian"}
+  ];
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function v(id) { return (document.getElementById(id)?.value || "").trim(); }
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function split(s) { return String(s||"").split(",").map(x=>x.trim()).filter(Boolean); }
+
+function btn(container, label, cls, fn) {
+  const b = document.createElement("button");
+  b.className = `btn ${cls}`;
+  b.textContent = label;
+  b.onclick = fn;
+  container.appendChild(b);
+  return b;
+}
+
+function toast(msg, type = "") {
+  const t = document.createElement("div");
+  t.className = `toast${type ? " toast--"+type : ""}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function gas(fn, ...args) {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)
+      [fn](...args);
+  });
+}
+</script>
+</body>
+</html>

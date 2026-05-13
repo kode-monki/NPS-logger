@@ -1,0 +1,40 @@
+{{/* layouts/trips/single.html */}}
+{{ define "main" }}
+{{ $p := .Params }}
+<article class="trip-single">
+
+  <header class="trip-header">
+    <div class="trip-header__meta">
+      {{ range $p.states }}
+        <a href="{{ "/states/" | relURL }}{{ . | urlize }}" class="tag tag--state">{{ . }}</a>
+      {{ end }}
+      {{ range $p.regions }}
+        <a href="{{ "/regions/" | relURL }}{{ . | urlize }}" class="tag tag--region">{{ . }}</a>
+      {{ end }}
+    </div>
+    <h1>{{ .Title }}</h1>
+    {{ if and $p.start_date $p.end_date }}
+      <p class="trip-header__dates">
+        <time>{{ $p.start_date }}</time> — <time>{{ $p.end_date }}</time>
+      </p>
+    {{ end }}
+    {{ if $p.summary }}
+      <p class="trip-header__summary">{{ $p.summary }}</p>
+    {{ end }}
+  </header>
+
+  <div class="trip-links">
+    {{ if $p.google_maps_url }}
+      <a href="{{ $p.google_maps_url }}" class="park-link park-link--map" target="_blank" rel="noopener">🗺 Route Map</a>
+    {{ end }}
+    {{ if $p.google_photos_url }}
+      <a href="{{ $p.google_photos_url }}" class="park-link park-link--photos" target="_blank" rel="noopener">📷 Trip Album</a>
+    {{ end }}
+  </div>
+
+  <div class="trip-content">
+    {{ .Content }}
+  </div>
+
+</article>
+{{ end }}

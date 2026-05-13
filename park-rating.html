@@ -1,0 +1,8 @@
+{{/* layouts/shortcodes/park-rating.html */}}
+{{ $rating := .Get "rating" | int }}
+<div class="sc-rating" aria-label="Rating: {{ $rating }} out of 5">
+  {{ range seq 5 }}
+    <span class="sc-rating__star{{ if le . $rating }} sc-rating__star--filled{{ end }}">★</span>
+  {{ end }}
+  <span class="sc-rating__label">{{ $rating }}/5</span>
+</div>
